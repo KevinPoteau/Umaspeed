@@ -216,7 +216,7 @@ img { max-width: 100%; }
       <div class="stats-line"><span class="phase-badge" id="phaseBadge">Opening Leg</span><span>Leader at <b id="leadPos">0 m</b></span><span class="gap" id="gapText">Neck and neck</span></div>
     </div>
     <div id="viewMap" role="tabpanel" aria-labelledby="tabMap" class="view">
-      <canvas id="track" height="80" aria-label="Track overview with phases and both runners' positions"></canvas>
+      <canvas id="track" height="92" aria-label="Track overview with phases and both runners' positions"></canvas>
       <canvas id="close" height="170" aria-label="Side view following both runners"></canvas>
     </div>
     <div id="viewChart" role="tabpanel" aria-labelledby="tabChart" class="view" hidden>
@@ -310,7 +310,7 @@ img { max-width: 100%; }
       var a, vOld = vb;
       if (vb < target) {
         a = baseAcc * accCoef[ph] + sumAcc + (dash ? 24 : 0);
-        vb = Math.min(vb + a * DT, target);
+        vb = Math.min(vb + a * DT, dash ? Math.min(target, 0.85 * base) : target);
         for (j = 0; j < sk.length; j++) { s = sk[j]; if (s.type === "acc" && (mask & (1 << s.i))) s.useful += DT; }
       } else {
         a = decel[ph];
@@ -536,7 +536,7 @@ img { max-width: 100%; }
   function drawTrack() {
     var g = setup(cvTrack), ctx = g.ctx, w = g.w, D = state.D;
     var L = 14, R = w - 14, px = function (m) { return L + (R - L) * m / D; };
-    var bandY = 2, bandH = 16, trackY = 22, trackH = 36;
+    var bandY = 2, bandH = 16, trackY = 22, trackH = 48;
     var narrow = w < 560;
     var bn = [0, D / 6, D * 4 / 6, D * 5 / 6, D];
     for (var p = 0; p < 4; p++) {
@@ -565,13 +565,32 @@ img { max-width: 100%; }
       if (m < D - step / 2 || m === D) ctx.fillText(m + (m === D ? " m" : ""), tx, trackY + trackH + 9);
     }
     if (D % step !== 0) { ctx.textAlign = "right"; ctx.fillText(D + " m", px(D), trackY + trackH + 9); ctx.fillRect(px(D), trackY + trackH + 2, 1, 5); }
-    var lanes = [trackY + trackH * 0.27, trackY + trackH * 0.73];
-    state.runners.forEach(function (r, ri) {
-      r.skills.forEach(function (s) {
-        if (s.trigger >= D) return;
-        var sx = px(Math.max(0, s.trigger)), y = lanes[ri];
-        ctx.strokeStyle = alpha(C[TYPES[s.type].color], .9); ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(sx, y - 8); ctx.lineTo(sx, y + 8); ctx.stroke();
+    var lanes = [trackY + trackH * 0.27, trackY + trackH * 0.73], laneH = trackH * 0.4;
+    // skill duration bars: faint for the whole planned span, solid for the part already run
+    state.sims.forEach(function (sim, ri) {
+      var spans = [];
+      sim.skills.forEach(function (st) {
+        if (!st.fired) return;
+        spans.push({ st: st, x0: st.x0, x1: Math.max(st.x0 + 1, posAt(sim, st.t1)) });
+      });
+      spans.sort(function (p1, p2) { return p1.x0 - p2.x0; });
+      var rowEnds = [];
+      spans.forEach(function (sp) {
+        var r = 0; while (r < rowEnds.length && rowEnds[r] > sp.x0) r++;
+        rowEnds[r] = sp.x1; sp.row = r;
+      });
+      var rows = Math.max(1, rowEnds.length), rh = Math.min(7, (laneH - 2) / rows - 1);
+      var top = lanes[ri] - (rows * (rh + 1)) / 2;
+      spans.forEach(function (sp) {
+        var col = C[TYPES[sp.st.type].color], y = top + sp.row * (rh + 1);
+        var a0 = px(sp.x0), a1 = Math.max(a0 + 3, px(sp.x1));
+        ctx.fillStyle = alpha(col, .35); ctx.fillRect(a0, y, a1 - a0, rh);
+        var tNow = Math.min(state.T, sp.st.t1);
+        if (state.T >= sp.st.t0) {
+          var cur = px(Math.max(sp.x0, posAt(sim, tNow)));
+          ctx.fillStyle = col; ctx.fillRect(a0, y, Math.max(2, cur - a0), rh);
+        }
+        ctx.fillStyle = col; ctx.fillRect(a0 - 1, y - 2, 2, rh + 4);
       });
     });
     state.sims.forEach(function (sim, ri) {
