@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speed Skill Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: vertical race board — overview map, close-up camera, live speedometers, speed chart, then the two runner sheets side by side */
+:root {
+  --bg: #f2f5f0;
+  --surface: #ffffff;
+  --sunk: #e8ede6;
+  --ink: #17201b;
+  --muted: #5b6a60;
+  --line: #d3dbd1;
+  --turf: #5c9657;
+  --turf2: #66a361;
+  --rail: #ffffff;
+  --a: #d42f6c;
+  --b: #2464c8;
+  --ts: #b77400;
+  --acc: #0b8a6c;
+  --cs: #7547cc;
+  --ph0: #8a978f;
+  --ph1: #5f86ad;
+  --ph2: #d0842a;
+  --ph3: #d4404f;
+  --warn: #b4321f;
+  --sky1: #3aa6e6;
+  --sky2: #bfe6f8;
+  --cloud: rgba(255,255,255,.85);
+  --far: #8fae9a;
+  --font-display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101612; --surface: #18201b; --sunk: #141b17; --ink: #e5ece6; --muted: #98a79d; --line: #2a362e;
+    --turf: #2d5631; --turf2: #335f37; --rail: #cfdccf;
+    --a: #ff5c95; --b: #5d9cff; --ts: #f0b23a; --acc: #3ccfa3; --cs: #a88bff;
+    --ph0: #7d8a82; --ph1: #6f9bc6; --ph2: #e39a44; --ph3: #f06070; --warn: #ff7a64; --sky1: #0e1a33; --sky2: #2b4670; --cloud: rgba(200,215,240,.18); --far: #22362b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101612; --surface: #18201b; --sunk: #141b17; --ink: #e5ece6; --muted: #98a79d; --line: #2a362e;
+  --turf: #2d5631; --turf2: #335f37; --rail: #cfdccf;
+  --a: #ff5c95; --b: #5d9cff; --ts: #f0b23a; --acc: #3ccfa3; --cs: #a88bff;
+  --ph0: #7d8a82; --ph1: #6f9bc6; --ph2: #e39a44; --ph3: #f06070; --warn: #ff7a64; --sky1: #0e1a33; --sky2: #2b4670; --cloud: rgba(200,215,240,.18); --far: #22362b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 5vw, 40px); line-height: 1; margin: 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+h1 span { color: var(--muted); font-weight: 600; }
+.lede { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
+.label { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--muted); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.ctl { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ctl.grow { flex: 1 1 260px; }
+.ctl input[type=range] { flex: 1; min-width: 0; accent-color: var(--ink); }
+select, input[type=number], input[type=text] { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; min-width: 0; }
+select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--b); outline-offset: 1px; }
+button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 6px 12px; }
+button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); font-family: var(--font-display); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; min-width: 104px; }
+.rates { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.rates button { border: 0; border-radius: 0; padding: 5px 9px; background: transparent; font-family: var(--font-mono); font-size: 13px; }
+.rates button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
+
+.board { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.board-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
+.board-head h2 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: 17px; margin: 0; }
+.stats-line { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.stats-line b { color: var(--ink); font-family: var(--font-mono); font-weight: 500; }
+canvas { display: block; width: 100%; }
+.phase-badge { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 2px 8px; border-radius: 4px; color: #fff; font-size: 13px; }
+.gap-big { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: .02em; }
+
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 18px; font-size: 13.5px; color: var(--muted); }
+.legend div { min-width: 0; }
+.legend strong { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.key i { display: inline-block; vertical-align: middle; margin-right: 5px; }
+.key .k-fill { width: 18px; height: 9px; border-radius: 2px; background: var(--muted); }
+.key .k-room { width: 18px; height: 9px; border-radius: 2px; background: repeating-linear-gradient(135deg, var(--acc) 0 3px, transparent 3px 6px); border: 1px solid var(--acc); }
+.key .k-top { width: 3px; height: 13px; background: var(--ink); }
+.key .k-acc { width: 18px; height: 5px; border-radius: 2px; background: var(--acc); }
+
+.runners { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.runner { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--rc); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.runner-head { display: flex; align-items: center; gap: 10px; }
+.token { width: 30px; height: 30px; border-radius: 50%; background: var(--rc); color: #fff; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 17px; flex: none; }
+.runner-head h3 { margin: 0; font-family: var(--font-display); font-size: 20px; text-transform: uppercase; letter-spacing: .04em; }
+.runner-head .finish { margin-left: auto; text-align: right; font-size: 13px; color: var(--muted); }
+.runner-head .finish b { display: block; color: var(--ink); font-family: var(--font-mono); font-size: 15px; font-weight: 500; }
+.live { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
+.live div { min-width: 0; }
+.live .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 15px; white-space: nowrap; }
+.live .v.up { color: var(--acc); }
+.skills { display: flex; flex-direction: column; gap: 8px; }
+.skill { border: 1px solid var(--line); border-left: 4px solid var(--tc); border-radius: 8px; padding: 8px 10px; display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; transition: background .2s; }
+.skill.active { background: color-mix(in srgb, var(--tc) 14%, transparent); }
+.skill .fields { display: grid; grid-template-columns: minmax(0,1.4fr) repeat(3, minmax(0,1fr)); gap: 6px; grid-column: 1 / -1; }
+.skill .top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.skill .top input { flex: 1; font-weight: 700; background: transparent; border-color: transparent; padding-left: 2px; }
+.skill .top input:hover, .skill .top input:focus { border-color: var(--line); }
+.f { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.f span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.f input, .f select { width: 100%; font-family: var(--font-mono); font-size: 13px; }
+.f select { font-family: var(--font-body); }
+.status { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+.status.warn { color: var(--warn); }
+.del { padding: 2px 8px; color: var(--muted); }
+.add { align-self: flex-start; border-style: dashed; }
+.empty { font-size: 13.5px; color: var(--muted); margin: 0; }
+.result { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: .02em; }
+.notes { font-size: 13px; color: var(--muted); max-width: 80ch; }
+.notes p { margin: 4px 0; }
+
+.wrap { gap: 10px; padding-block: 12px 16px; }
+header.top { align-items: center; }
+h1 { font-size: clamp(22px, 3.2vw, 30px); }
+.result { font-size: 16px; }
+.controls { padding: 8px 12px; gap: 8px 16px; }
+.board { padding: 10px 12px; gap: 6px; }
+.board-head.sub { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--line); }
+.board-head h2 { font-size: 15px; }
+.view { display: flex; flex-direction: column; gap: 6px; }
+.view[hidden] { display: none; }
+.tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.tabs button { border: 0; border-radius: 0; padding: 5px 12px; background: transparent; font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: 14px; color: var(--muted); }
+.tabs button[aria-selected=true] { background: var(--ink); color: var(--bg); }
+.gap { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--ink); }
+.stats-line { align-items: center; }
+.key .sw { margin-right: 5px; vertical-align: middle; }
+.runners { gap: 10px; }
+.runner { padding: 10px 12px; gap: 8px; }
+.runner-head h3 { font-size: 17px; }
+.token { width: 26px; height: 26px; font-size: 15px; }
+.skills { gap: 6px; }
+.skill { padding: 6px 8px; gap: 4px 8px; }
+.status { font-size: 12.5px; }
+.add { padding: 4px 10px; font-size: 13.5px; }
+@media (max-width: 560px) {
+  .skill .fields { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .skill .fields .f.type { grid-column: span 3; }
+  .live { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+
+<style>
+html { color-scheme: light; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font-size: 14px; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Speed Skill Lab <span>· Umamusume</span></h1>
+    <div class="result" id="result" aria-live="polite"></div>
+  </header>
+
+  <section class="controls" aria-label="Race settings and playback">
+    <div class="ctl grow">
+      <label class="label" for="dist">Distance</label>
+      <input type="range" id="dist" min="1200" max="3000" step="100" value="2000">
+      <b class="mono" id="distVal">2000 m</b>
+    </div>
+    <div class="ctl">
+      <label class="label" for="preset">Scenario</label>
+      <select id="preset">
+        <option value="duel">Acceleration vs target speed</option>
+        <option value="timing">Acceleration: right vs wrong moment</option>
+        <option value="tsgood">Target speed: too early vs well timed</option>
+        <option value="opening">Acceleration at the start</option>
+        <option value="current">Current speed vs target speed</option>
+        <option value="blank">No skills</option>
+      </select>
+    </div>
+    <div class="ctl">
+      <button class="primary" id="play">Start</button>
+      <button id="reset" aria-label="Back to start">↺</button>
+      <div class="rates" role="group" aria-label="Playback speed" id="rates">
+        <button data-r="1" aria-pressed="false">×1</button>
+        <button data-r="2" aria-pressed="false">×2</button>
+        <button data-r="4" aria-pressed="true">×4</button>
+        <button data-r="8" aria-pressed="false">×8</button>
+      </div>
+    </div>
+    <div class="ctl grow">
+      <label class="label" for="scrub">Time</label>
+      <input type="range" id="scrub" min="0" max="100" step="0.05" value="0">
+      <b class="mono" id="clock">0:00.00</b>
+    </div>
+  </section>
+
+  <section class="board" aria-label="Race view">
+    <div class="board-head">
+      <div class="tabs" role="tablist" aria-label="View">
+        <button role="tab" id="tabMap" aria-selected="true" aria-controls="viewMap">Race map</button>
+        <button role="tab" id="tabChart" aria-selected="false" aria-controls="viewChart">Speed chart</button>
+      </div>
+      <div class="stats-line"><span class="phase-badge" id="phaseBadge">Opening Leg</span><span>Leader at <b id="leadPos">0 m</b></span><span class="gap" id="gapText">Neck and neck</span></div>
+    </div>
+    <div id="viewMap" role="tabpanel" aria-labelledby="tabMap" class="view">
+      <canvas id="track" height="80" aria-label="Track overview with phases and both runners' positions"></canvas>
+      <canvas id="close" height="170" aria-label="Side view following both runners"></canvas>
+    </div>
+    <div id="viewChart" role="tabpanel" aria-labelledby="tabChart" class="view" hidden>
+      <canvas id="chart" height="180" aria-label="Speed curves of both runners"></canvas>
+      <div class="key"><span>solid: actual speed</span><span>dashed: target speed</span><span>grey dotted: no skills</span><span><i class="sw" style="background:var(--ts)"></i>target speed</span><span><i class="sw" style="background:var(--acc)"></i>acceleration</span><span><i class="sw" style="background:var(--cs)"></i>current speed</span></div>
+    </div>
+    <div class="board-head sub">
+      <h2>Speedometers</h2>
+      <div class="key">
+        <span><i class="k-fill"></i>current speed</span>
+        <span><i class="k-top"></i>target (top) speed</span>
+        <span><i class="k-room"></i>gap left to accelerate</span>
+        <span><i class="k-acc"></i>acceleration now</span>
+      </div>
+    </div>
+    <canvas id="gauges" height="128" aria-label="Live current speed, target speed and acceleration of both runners"></canvas>
+  </section>
+
+  <section class="runners" id="runners"></section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var DT = 1 / 15;
+  var STATS = { speed: 1200, power: 1000 };
+  var LEN = 2.5;
+  var PHASES = ["Opening Leg", "Middle Leg", "Final Leg", "Last Spurt"];
+  var PHASES_SHORT = ["Opening", "Middle", "Final", "Spurt"];
+  var TYPES = {
+    ts: { label: "Target speed", short: "target speed", unit: "m/s", def: 0.35, dur: 3, color: "--ts" },
+    acc: { label: "Acceleration", short: "accel", unit: "m/s²", def: 0.4, dur: 3, color: "--acc" },
+    cs: { label: "Current speed", short: "current speed", unit: "m/s", def: 0.15, dur: 2.4, color: "--cs" }
+  };
+
+  var state = {
+    D: 2000,
+    runners: [
+      { id: "a", name: "Runner A", letter: "A", color: "--a", skills: [] },
+      { id: "b", name: "Runner B", letter: "B", color: "--b", skills: [] }
+    ],
+    T: 0, playing: false, rate: 4, sims: null, base: null, maxT: 100, lo: 15, hi: 25, accMax: 1
+  };
+  var uid = 1;
+
+  function fmt(n, d) { return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  function fmtTime(t) {
+    var m = Math.floor(t / 60), s = t - m * 60;
+    return m + ":" + (s < 10 ? "0" : "") + s.toFixed(2);
+  }
+  function phaseOf(x, D) { if (x < D / 6) return 0; if (x < D * 4 / 6) return 1; if (x < D * 5 / 6) return 2; return 3; }
+
+  // ---------- Simulation ----------
+  function simulate(D, skills) {
+    var base = 20 - (D - 2000) / 1000;
+    var spdTerm = Math.sqrt(500 * STATS.speed) * 0.002;
+    var spurt = (base * (0.975 + 0.01) + spdTerm) * 1.05 + spdTerm;
+    var phaseT = [base * 0.978, base * 0.991, spurt, spurt];
+    var baseAcc = 0.0006 * Math.sqrt(500 * STATS.power);
+    var accCoef = [0.985, 1.0, 0.996, 0.996];
+    var decel = [-1.2, -0.8, -1.0, -1.0];
+    var sk = skills.map(function (s, i) {
+      return { i: i, type: s.type, value: +s.value || 0, trigger: Math.max(0, +s.trigger || 0), dur: Math.max(0, +s.dur || 0) * D / 1000,
+        fired: false, t0: 0, t1: 0, x0: 0, useful: 0, maxGain: 0 };
+    });
+    var x = 0, vb = 3, t = 0, dash = true;
+    var X = [0], V = [3], TG = [phaseT[0]], ACT = [0], A = [0], DASH = [1];
+    var events = [];
+    var finishT = null;
+    var guard = 0;
+    while (x < D && guard < 15 * 600) {
+      guard++;
+      for (var j = 0; j < sk.length; j++) {
+        var s = sk[j];
+        if (!s.fired && x >= s.trigger && s.trigger < D) {
+          s.fired = true; s.t0 = t; s.t1 = t + s.dur; s.x0 = x;
+          events.push({ t: t, x: x, i: s.i, type: s.type, value: s.value });
+        }
+      }
+      var ph = phaseOf(x, D);
+      var sumTS = 0, sumAcc = 0, sumCS = 0, mask = 0;
+      for (j = 0; j < sk.length; j++) {
+        s = sk[j];
+        if (s.fired && t < s.t1) {
+          mask |= (1 << s.i);
+          if (s.type === "ts") sumTS += s.value; else if (s.type === "acc") sumAcc += s.value; else sumCS += s.value;
+        }
+      }
+      var target = phaseT[ph] + sumTS;
+      if (dash && vb >= 0.85 * base) dash = false;
+      var a, vOld = vb;
+      if (vb < target) {
+        a = baseAcc * accCoef[ph] + sumAcc + (dash ? 24 : 0);
+        vb = Math.min(vb + a * DT, target);
+        for (j = 0; j < sk.length; j++) { s = sk[j]; if (s.type === "acc" && (mask & (1 << s.i))) s.useful += DT; }
+      } else {
+        a = decel[ph];
+        vb = Math.max(vb + a * DT, target);
+      }
+      for (j = 0; j < sk.length; j++) {
+        s = sk[j];
+        if (s.type === "ts" && (mask & (1 << s.i))) {
+          var g = (vb - (target - s.value)) / (s.value || 1);
+          if (g > s.maxGain) s.maxGain = Math.min(1, g);
+        }
+      }
+      var v = vb + sumCS;
+      var nx = x + v * DT;
+      if (nx >= D) finishT = t + (D - x) / v;
+      x = Math.min(nx, D); t += DT;
+      X.push(x); V.push(v); TG.push(target + sumCS); ACT.push(mask);
+      A.push((vb - vOld) / DT); DASH.push(dash ? 1 : 0);
+    }
+    return { X: X, V: V, TG: TG, ACT: ACT, A: A, DASH: DASH, events: events, finishT: finishT || t, skills: sk, D: D };
+  }
+  function posAt(sim, T) {
+    var k = T / DT, i = Math.floor(k), n = sim.X.length - 1;
+    if (i >= n) return sim.X[n];
+    var f = k - i; return sim.X[i] * (1 - f) + sim.X[i + 1] * f;
+  }
+  function idxAt(sim, T) { return Math.min(sim.X.length - 1, Math.max(0, Math.round(T / DT))); }
+  function finished(sim, T) { return T >= sim.finishT; }
+
+  function runSims() {
+    state.base = simulate(state.D, []);
+    state.sims = state.runners.map(function (r) { return simulate(state.D, r.skills); });
+    state.maxT = Math.max(state.sims[0].finishT, state.sims[1].finishT) + 1.5;
+    scrub.max = state.maxT.toFixed(2);
+    if (state.T > state.maxT) state.T = state.maxT;
+    // shared speed scale for chart and speedometers
+    var lo = Infinity, hi = -Infinity, am = 0.5;
+    state.sims.concat([state.base]).forEach(function (sim) {
+      for (var i = 0; i < sim.X.length; i++) {
+        if (!sim.DASH[i]) am = Math.max(am, sim.A[i]);
+        if (sim.X[i] < state.D * 0.04) continue;
+        lo = Math.min(lo, sim.V[i], sim.TG[i]); hi = Math.max(hi, sim.V[i], sim.TG[i]);
+      }
+    });
+    state.lo = Math.floor((lo - 0.3) * 2) / 2; state.hi = Math.ceil((hi + 0.2) * 2) / 2;
+    state.accMax = Math.ceil(am * 10 + 1) / 10;
+    updateStatuses();
+    updateResult();
+  }
+
+  // ---------- Presets ----------
+  function mk(name, type, value, trigger, dur) {
+    return { id: uid++, name: name, type: type, value: value, trigger: Math.round(trigger), dur: dur == null ? TYPES[type].dur : dur };
+  }
+  function applyPreset(p) {
+    var D = state.D, fl = D * 4 / 6, ls = D * 5 / 6;
+    var A = [], B = [];
+    if (p === "duel") {
+      A = [mk("Accel at Final Leg start", "acc", 0.4, fl + 5)];
+      B = [mk("Target speed at Final Leg start", "ts", 0.35, fl + 5)];
+    } else if (p === "timing") {
+      A = [mk("Accel at Final Leg start", "acc", 0.4, fl + 5)];
+      B = [mk("Accel in Middle Leg", "acc", 0.4, D * 0.4)];
+    } else if (p === "tsgood") {
+      A = [mk("Target speed at Final Leg start", "ts", 0.35, fl + 5)];
+      B = [mk("Target speed at Last Spurt", "ts", 0.35, ls + 5)];
+    } else if (p === "opening") {
+      A = [mk("Accel at the start", "acc", 0.4, 20)];
+      B = [];
+    } else if (p === "current") {
+      A = [mk("Current speed at Last Spurt", "cs", 0.15, ls + 5)];
+      B = [mk("Target speed at Last Spurt", "ts", 0.15, ls + 5)];
+    }
+    state.runners[0].skills = A; state.runners[1].skills = B;
+    state.T = 0; state.playing = false;
+    renderRunners(); runSims(); syncPlay();
+  }
+
+  // ---------- Runner panels ----------
+  var runnersEl = document.getElementById("runners");
+  var refs = [];
+  function renderRunners() {
+    runnersEl.innerHTML = "";
+    refs = state.runners.map(function (r, ri) {
+      var el = document.createElement("article");
+      el.className = "runner";
+      el.style.setProperty("--rc", "var(" + r.color + ")");
+      el.innerHTML =
+        '<div class="runner-head"><div class="token">' + r.letter + '</div><h3>' + r.name + '</h3>' +
+        '<div class="finish">Finish<b data-k="fin">–</b><span data-k="gain"></span></div></div>' +
+        '<div class="skills" data-k="list"></div>' +
+        '<button class="add" type="button">+ Add a skill</button>';
+      runnersEl.appendChild(el);
+      var list = el.querySelector('[data-k="list"]');
+      var rows = [];
+      if (!r.skills.length) {
+        var p = document.createElement("p"); p.className = "empty"; p.textContent = "No skills: this runner only uses her phase speeds."; list.appendChild(p);
+      }
+      r.skills.forEach(function (s, si) { rows.push(renderSkill(list, r, ri, s, si)); });
+      el.querySelector(".add").addEventListener("click", function () {
+        var D = state.D;
+        r.skills.push(mk("Skill " + (r.skills.length + 1), "ts", TYPES.ts.def, Math.round(D * 4 / 6 / 50) * 50));
+        renderRunners(); runSims();
+      });
+      function q(k) { return el.querySelector('[data-k="' + k + '"]'); }
+      return { el: el, rows: rows, fin: q("fin"), gain: q("gain") };
+    });
+  }
+  function renderSkill(list, r, ri, s, si) {
+    var row = document.createElement("div");
+    row.className = "skill";
+    row.style.setProperty("--tc", "var(" + TYPES[s.type].color + ")");
+    var pid = r.id + "-" + s.id;
+    var opts = Object.keys(TYPES).map(function (k) { return '<option value="' + k + '"' + (k === s.type ? " selected" : "") + ">" + TYPES[k].label + "</option>"; }).join("");
+    row.innerHTML =
+      '<div class="top"><input type="text" id="n-' + pid + '" aria-label="Skill name" value="' + s.name.replace(/"/g, "&quot;") + '"></div>' +
+      '<button class="del" type="button" aria-label="Remove this skill">×</button>' +
+      '<div class="fields">' +
+      '<label class="f type"><span>Effect</span><select id="t-' + pid + '">' + opts + '</select></label>' +
+      '<label class="f"><span>Value (' + TYPES[s.type].unit + ')</span><input type="number" id="v-' + pid + '" step="0.05" value="' + s.value + '"></label>' +
+      '<label class="f"><span>Fires at (m)</span><input type="number" id="g-' + pid + '" step="10" min="0" value="' + s.trigger + '"></label>' +
+      '<label class="f"><span>Base dur. (s)</span><input type="number" id="d-' + pid + '" step="0.1" min="0" value="' + s.dur + '"></label>' +
+      '</div><div class="status" data-k="st"></div>';
+    list.appendChild(row);
+    function bind(sel, key, num, rerender) {
+      var inp = row.querySelector(sel);
+      inp.addEventListener(rerender ? "change" : "input", function () {
+        if (key === "type") {
+          s.type = inp.value; s.value = TYPES[s.type].def; s.dur = TYPES[s.type].dur;
+          renderRunners(); runSims(); return;
+        }
+        s[key] = num ? parseFloat(inp.value) : inp.value;
+        if (num && isNaN(s[key])) s[key] = 0;
+        if (key !== "name") runSims();
+      });
+    }
+    bind("#n-" + pid, "name", false);
+    bind("#t-" + pid, "type", false, true);
+    bind("#v-" + pid, "value", true);
+    bind("#g-" + pid, "trigger", true);
+    bind("#d-" + pid, "dur", true);
+    row.querySelector(".del").addEventListener("click", function () { r.skills.splice(si, 1); renderRunners(); runSims(); });
+    return { row: row, st: row.querySelector('[data-k="st"]') };
+  }
+  function updateStatuses() {
+    state.runners.forEach(function (r, ri) {
+      var sim = state.sims[ri], ref = refs[ri];
+      if (!ref) return;
+      r.skills.forEach(function (s, si) {
+        var st = sim.skills[si], el = ref.rows[si] && ref.rows[si].st;
+        if (!el) return;
+        el.classList.remove("warn");
+        var effDur = fmt(st.dur, 1) + " s real duration";
+        if (!st.fired) { el.textContent = "Never fires: trigger point is past the finish line (" + fmt(state.D, 0) + " m)."; el.classList.add("warn"); return; }
+        var where = PHASES[phaseOf(st.x0, state.D)];
+        if (st.type === "acc") {
+          if (st.useful < DT / 2) { el.textContent = where + " · " + effDur + " · no effect: the runner is already at her target speed."; el.classList.add("warn"); }
+          else el.textContent = where + " · " + effDur + " · actually accelerated for " + fmt(Math.min(st.useful, st.dur), 1) + " s.";
+        } else if (st.type === "ts") {
+          var pct = Math.round(st.maxGain * 100);
+          el.textContent = where + " · " + effDur + " · " + pct + "% of the bonus reached before the effect ended.";
+          if (pct < 50) el.classList.add("warn");
+        } else {
+          el.textContent = where + " · " + effDur + " · instant gain of +" + fmt(st.value, 2) + " m/s, no ramp-up.";
+        }
+      });
+      ref.fin.textContent = fmtTime(sim.finishT);
+      var gainM = state.D - posAt(state.base, sim.finishT);
+      ref.gain.textContent = Math.abs(gainM) < 0.05 ? "no gain" : (gainM > 0 ? "+" : "−") + fmt(Math.abs(gainM), 1) + " m vs no skills";
+    });
+  }
+  function updateResult() {
+    var a = state.sims[0], b = state.sims[1], el = document.getElementById("result");
+    var dt = b.finishT - a.finishT;
+    if (Math.abs(dt) < 0.005) { el.textContent = "Dead heat."; return; }
+    var w = dt > 0 ? 0 : 1, l = 1 - w;
+    var margin = state.D - posAt(state.sims[l], state.sims[w].finishT);
+    var lens = margin / LEN;
+    el.innerHTML = state.runners[w].name + " wins by <span class=\"mono\">" + fmt(lens, 2) + "</span> length" + (Math.abs(lens - 1) < 0.005 ? "" : "s") +
+      " (" + fmt(margin, 1) + " m, " + fmt(Math.abs(dt), 2) + " s)";
+  }
+
+  // ---------- Colors ----------
+  var C = {};
+  function readColors() {
+    var cs = getComputedStyle(document.documentElement);
+    ["--bg", "--surface", "--sunk", "--ink", "--muted", "--line", "--turf", "--turf2", "--rail", "--a", "--b", "--ts", "--acc", "--cs", "--ph0", "--ph1", "--ph2", "--ph3", "--warn", "--sky1", "--sky2", "--cloud", "--far"].forEach(function (k) { C[k] = cs.getPropertyValue(k).trim(); });
+  }
+  readColors();
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors); } catch (e) {}
+  new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ---------- Canvas helpers ----------
+  function setup(cv) {
+    var dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!cv._h) cv._h = parseInt(cv.getAttribute("height"), 10);
+    var h = cv._h;
+    if (cv._w !== w || cv._dpr !== dpr) { cv.width = w * dpr; cv.height = h * dpr; cv.style.height = h + "px"; cv._w = w; cv._dpr = dpr; }
+    var ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+  function alpha(hex, a) {
+    if (!hex || hex[0] !== "#") return hex;
+    var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")";
+  }
+  var FD = "'Saira Condensed', 'Arial Narrow', sans-serif", FM = "'IBM Plex Mono', ui-monospace, monospace", FB = "'Atkinson Hyperlegible', system-ui, sans-serif";
+  function token(ctx, x, y, r, col, letter) {
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = C["--rail"]; ctx.stroke();
+    ctx.fillStyle = "#ffffff"; ctx.font = "700 " + Math.round(r * 1.15) + "px " + FD;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(letter, x, y + 1);
+  }
+  function skillTriangle(ctx, x, y, col) {
+    ctx.beginPath(); ctx.moveTo(x, y + 6); ctx.lineTo(x - 5, y - 3); ctx.lineTo(x + 5, y - 3); ctx.closePath();
+    ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = C["--surface"]; ctx.stroke();
+  }
+
+  // ---------- Track overview ----------
+  var cvTrack = document.getElementById("track");
+  function drawTrack() {
+    var g = setup(cvTrack), ctx = g.ctx, w = g.w, D = state.D;
+    var L = 14, R = w - 14, px = function (m) { return L + (R - L) * m / D; };
+    var bandY = 2, bandH = 16, trackY = 22, trackH = 36;
+    var narrow = w < 560;
+    var bn = [0, D / 6, D * 4 / 6, D * 5 / 6, D];
+    for (var p = 0; p < 4; p++) {
+      var x0 = px(bn[p]), x1 = px(bn[p + 1]);
+      ctx.fillStyle = C["--ph" + p]; ctx.fillRect(x0, bandY, x1 - x0 - 1, bandH);
+      ctx.fillStyle = "#ffffff"; ctx.font = "700 12px " + FD;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      var lab = narrow ? PHASES_SHORT[p] : PHASES[p];
+      if (ctx.measureText(lab).width < x1 - x0 - 6) ctx.fillText(lab.toUpperCase(), (x0 + x1) / 2, bandY + bandH / 2 + 1);
+    }
+    ctx.fillStyle = C["--turf"]; ctx.fillRect(L, trackY, R - L, trackH);
+    for (p = 0; p < 4; p++) {
+      x0 = px(bn[p]); x1 = px(bn[p + 1]);
+      ctx.fillStyle = alpha(C["--ph" + p], .22); ctx.fillRect(x0, trackY, x1 - x0, trackH);
+    }
+    ctx.strokeStyle = C["--rail"]; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(L, trackY); ctx.lineTo(R, trackY); ctx.moveTo(L, trackY + trackH); ctx.lineTo(R, trackY + trackH); ctx.stroke();
+    ctx.setLineDash([4, 6]); ctx.lineWidth = 1; ctx.strokeStyle = alpha(C["--rail"], .5);
+    ctx.beginPath(); ctx.moveTo(L, trackY + trackH / 2); ctx.lineTo(R, trackY + trackH / 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C["--rail"]; ctx.fillRect(R - 3, trackY, 3, trackH);
+    ctx.fillStyle = C["--muted"]; ctx.font = "11px " + FM; ctx.textBaseline = "top";
+    var step = narrow ? 600 : 200;
+    for (var m = 0; m <= D; m += step) {
+      var tx = px(m); ctx.fillRect(tx, trackY + trackH + 2, 1, 5);
+      ctx.textAlign = m === 0 ? "left" : (m >= D - step / 2 ? "right" : "center");
+      if (m < D - step / 2 || m === D) ctx.fillText(m + (m === D ? " m" : ""), tx, trackY + trackH + 9);
+    }
+    if (D % step !== 0) { ctx.textAlign = "right"; ctx.fillText(D + " m", px(D), trackY + trackH + 9); ctx.fillRect(px(D), trackY + trackH + 2, 1, 5); }
+    var lanes = [trackY + trackH * 0.27, trackY + trackH * 0.73];
+    state.runners.forEach(function (r, ri) {
+      r.skills.forEach(function (s) {
+        if (s.trigger >= D) return;
+        var sx = px(Math.max(0, s.trigger)), y = lanes[ri];
+        ctx.strokeStyle = alpha(C[TYPES[s.type].color], .9); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(sx, y - 8); ctx.lineTo(sx, y + 8); ctx.stroke();
+      });
+    });
+    state.sims.forEach(function (sim, ri) {
+      token(ctx, px(posAt(sim, state.T)), lanes[ri], 8, C[state.runners[ri].color], state.runners[ri].letter);
+    });
+  }
+
+  // ---------- Side view (close-up camera) ----------
+  var cvClose = document.getElementById("close");
+  function drawClose() {
+    var g = setup(cvClose), ctx = g.ctx, w = g.w, h = g.h, D = state.D;
+    var xa = posAt(state.sims[0], state.T), xb = posAt(state.sims[1], state.T);
+    var half = Math.max(w < 560 ? 9 : 16, Math.abs(xa - xb) / 2 + 6);
+    var center = (xa + xb) / 2;
+    var cx = w / 2, k1 = (w / 2 - 34) / half;
+    var hor = Math.round(h * 0.34);
+    var kz = function (z) { return k1 * (0.45 + 0.55 * z); };
+    var gy = function (z) { return hor + (h - hor) * z; };
+    var sxz = function (m, z) { return cx + (m - center) * kz(z); };
+
+    // sky
+    var sky = ctx.createLinearGradient(0, 0, 0, hor);
+    sky.addColorStop(0, C["--sky1"]); sky.addColorStop(1, C["--sky2"]);
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, hor);
+    // clouds (slow parallax)
+    ctx.fillStyle = C["--cloud"];
+    var cp = center * k1 * 0.06, span = 260;
+    for (var c = -1; c < Math.ceil(w / span) + 2; c++) {
+      var base = Math.floor(cp / span) + c, ox = base * span - cp;
+      var seed = Math.abs(Math.sin(base * 12.9898) * 43758.5453) % 1;
+      var cy = 10 + seed * (hor * 0.45), cw = 34 + seed * 30;
+      ctx.beginPath();
+      ctx.ellipse(ox + 40, cy + 8, cw, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(ox + 40 - cw * 0.35, cy + 4, cw * 0.4, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(ox + 40 + cw * 0.2, cy + 1, cw * 0.45, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // grandstand silhouette (medium parallax)
+    ctx.fillStyle = C["--far"];
+    var fp = center * k1 * 0.25, bw = 90;
+    for (var b = -1; b < Math.ceil(w / bw) + 2; b++) {
+      var idx = Math.floor(fp / bw) + b, bx = idx * bw - fp;
+      var sd = Math.abs(Math.sin(idx * 78.233) * 12345.678) % 1;
+      var bh = 6 + sd * 14;
+      ctx.fillRect(bx, hor - bh, bw - 4, bh);
+      if (sd > 0.6) { ctx.beginPath(); ctx.moveTo(bx - 4, hor - bh); ctx.lineTo(bx + bw / 2, hor - bh - 6); ctx.lineTo(bx + bw, hor - bh); ctx.fill(); }
+    }
+    // turf with perspective mowing stripes
+    ctx.fillStyle = C["--turf"]; ctx.fillRect(0, hor, w, h - hor);
+    var mMin = center - half / 0.45 - 10, mMax = center + half / 0.45 + 10;
+    ctx.fillStyle = C["--turf2"];
+    for (var m = Math.floor(mMin / 5) * 5; m < mMax; m += 5) {
+      if (((m / 5) % 2 + 2) % 2 !== 0) continue;
+      ctx.beginPath();
+      ctx.moveTo(sxz(m, 0), hor); ctx.lineTo(sxz(m + 5, 0), hor);
+      ctx.lineTo(sxz(m + 5, 1), h); ctx.lineTo(sxz(m, 1), h); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = alpha(C["--ph" + phaseOf(center, D)], .16); ctx.fillRect(0, hor, w, h - hor);
+    // phase boundaries and finish line across the turf
+    [D / 6, D * 4 / 6, D * 5 / 6].forEach(function (bd, i) {
+      if (sxz(bd, 1) < -40 || sxz(bd, 0) > w + 40) return;
+      ctx.fillStyle = alpha(C["--ph" + (i + 1)], .85);
+      ctx.beginPath(); ctx.moveTo(sxz(bd, 0) - 1, hor); ctx.lineTo(sxz(bd, 0) + 1, hor); ctx.lineTo(sxz(bd, 1) + 2.5, h); ctx.lineTo(sxz(bd, 1) - 2.5, h); ctx.fill();
+      ctx.fillStyle = C["--ph" + (i + 1)];
+      var lx = sxz(bd, 0.06), lab = PHASES[i + 1].toUpperCase();
+      ctx.font = "700 11px " + FD; var tw = ctx.measureText(lab).width;
+      ctx.fillRect(lx - 1, hor - 34, 2, 34); ctx.fillRect(lx, hor - 34, tw + 8, 14);
+      ctx.fillStyle = "#ffffff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(lab, lx + 4, hor - 26);
+    });
+    if (sxz(D, 1) > -40 && sxz(D, 0) < w + 40) {
+      var sq = 6;
+      for (var z = 0; z < 1; z += 0.08) {
+        var y0 = gy(z), y1 = gy(z + 0.08), on = Math.round(z / 0.08) % 2;
+        ctx.fillStyle = on ? "#ffffff" : "#1a1a1a";
+        ctx.beginPath(); ctx.moveTo(sxz(D, z) - 2, y0); ctx.lineTo(sxz(D, z) + 2, y0); ctx.lineTo(sxz(D, z + 0.08) + 3, y1); ctx.lineTo(sxz(D, z + 0.08) - 3, y1); ctx.fill();
+      }
+      var fx = sxz(D, 0.06);
+      ctx.fillStyle = C["--rail"]; ctx.fillRect(fx - 2, 4, 4, hor - 4);
+      ctx.fillStyle = C["--ph3"]; ctx.fillRect(fx - 16, 4, 32, 12);
+      ctx.fillStyle = "#ffffff"; ctx.font = "700 10px " + FD; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("FINISH", fx, 10.5);
+    }
+    // outer rail with posts and distance-remaining poles every 100 m
+    var rz = 0.06, ry = gy(rz);
+    ctx.strokeStyle = C["--rail"]; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, ry - 9); ctx.lineTo(w, ry - 9); ctx.stroke();
+    ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, ry - 3); ctx.lineTo(w, ry - 3); ctx.stroke();
+    for (m = Math.floor(mMin / 2.5) * 2.5; m < mMax; m += 2.5) {
+      if (m < 0 || m > D) continue;
+      var px0 = sxz(m, rz); if (px0 < -10 || px0 > w + 10) continue;
+      ctx.fillStyle = C["--rail"]; ctx.fillRect(px0 - 1, ry - 11, 2, 11);
+    }
+    ctx.font = "700 10px " + FM; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (m = Math.ceil(mMin / 100) * 100; m < mMax; m += 100) {
+      var rem = D - m; if (m <= 0 || rem <= 0) continue;
+      var pxp = sxz(m, rz); if (pxp < -20 || pxp > w + 20) continue;
+      ctx.fillStyle = (rem / 100) % 2 ? C["--rail"] : C["--ph3"];
+      ctx.fillRect(pxp - 2, ry - 30, 4, 30);
+      ctx.fillStyle = C["--rail"]; ctx.fillRect(pxp - 13, ry - 42, 26, 13);
+      ctx.fillStyle = "#1a1a1a"; ctx.fillText(rem, pxp, ry - 35);
+    }
+    // length scale along the front edge
+    var lead = Math.max(xa, xb);
+    ctx.fillStyle = alpha(C["--rail"], .8); ctx.font = "10px " + FM; ctx.textBaseline = "bottom";
+    for (var t = 0; t <= 8; t++) {
+      var tx = sxz(lead - t * LEN, 1); if (tx < 0 || tx > w) continue;
+      ctx.fillRect(tx, h - (t % 2 ? 4 : 8), 1, t % 2 ? 4 : 8);
+      if (t > 0 && t % 2 === 0) ctx.fillText("−" + t + " L", tx, h - 9);
+    }
+    // runners: A on the far lane, B on the near lane
+    var depth = [0.34, 0.78];
+    [0, 1].forEach(function (ri) {
+      var sim = state.sims[ri], x = ri ? xb : xa, z = depth[ri];
+      var col = C[state.runners[ri].color], r = 15 + 16 * z;
+      var k = idxAt(sim, state.T), v = sim.V[k], acc = sim.A[k], done = finished(sim, state.T);
+      var px1 = sxz(x, z), footY = gy(z);
+      var bob = done ? 0 : Math.abs(Math.sin(x * 1.6)) * (2 + 2 * z);
+      var cy1 = footY - r - 2 - bob;
+      // shadow
+      ctx.fillStyle = "rgba(0,0,0,.22)"; ctx.beginPath(); ctx.ellipse(px1, footY, r * 0.9, r * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+      // speed lines
+      if (!done) {
+        var frac = Math.max(0, Math.min(1, (v - state.lo) / (state.hi - state.lo)));
+        ctx.strokeStyle = alpha(C["--rail"], .75); ctx.lineCap = "round"; ctx.lineWidth = 2 + z;
+        for (var s = -1; s <= 1; s++) {
+          var len = (12 + frac * 60) * (0.6 + 0.6 * z) - Math.abs(s) * 10;
+          var ly = cy1 + s * r * 0.45;
+          ctx.beginPath(); ctx.moveTo(px1 - r - 6, ly); ctx.lineTo(px1 - r - 6 - len, ly); ctx.stroke();
+        }
+        if (acc > 0.05 && !sim.DASH[k]) {
+          var n = acc > 0.7 ? 3 : (acc > 0.35 ? 2 : 1), cs = 4 + 3 * z;
+          ctx.strokeStyle = C["--acc"]; ctx.lineWidth = 3;
+          for (var cc = 0; cc < n; cc++) {
+            var ox2 = px1 + r + 6 + cc * (cs + 3);
+            ctx.beginPath(); ctx.moveTo(ox2, cy1 - cs); ctx.lineTo(ox2 + cs, cy1); ctx.lineTo(ox2, cy1 + cs); ctx.stroke();
+          }
+        }
+      }
+      // skill flash
+      sim.events.forEach(function (ev) {
+        var age = state.T - ev.t;
+        if (age >= 0 && age < 1.4) {
+          var tc = C[TYPES[ev.type].color];
+          ctx.beginPath(); ctx.arc(px1, cy1, r + 3 + age * 16, 0, Math.PI * 2); ctx.strokeStyle = alpha(tc, Math.max(0, 1 - age / 1.4)); ctx.lineWidth = 3; ctx.stroke();
+        }
+      });
+      // body
+      ctx.beginPath(); ctx.arc(px1, cy1, r, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff"; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.stroke();
+      ctx.lineWidth = 1.2; ctx.strokeStyle = "#1a1a1a"; ctx.beginPath(); ctx.arc(px1, cy1, r + 1.8, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = col; ctx.font = "700 " + Math.round(r * 0.62) + "px " + FD; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(state.runners[ri].name.replace("Runner ", "Uma "), px1, cy1 + 1);
+      // skill label above
+      sim.events.forEach(function (ev) {
+        var age = state.T - ev.t;
+        if (age >= 0 && age < 1.4) {
+          var lab = "+" + fmt(ev.value, 2) + " " + TYPES[ev.type].short;
+          ctx.font = "700 13px " + FD; var lw = ctx.measureText(lab).width + 10;
+          var ly2 = cy1 - r - 12 - age * 6;
+          ctx.fillStyle = alpha(C["--surface"], .92); ctx.fillRect(px1 - lw / 2, ly2 - 9, lw, 17);
+          ctx.fillStyle = C[TYPES[ev.type].color]; ctx.textBaseline = "middle"; ctx.fillText(lab, px1, ly2);
+        }
+      });
+    });
+    var gap = xa - xb, el = document.getElementById("gapText");
+    if (Math.abs(gap) < 0.25) el.textContent = "Neck and neck";
+    else el.innerHTML = '<span style="color:var(' + (gap > 0 ? "--a" : "--b") + ')">' + (gap > 0 ? "A" : "B") + "</span> leads by " + fmt(Math.abs(gap) / LEN, 2) + " L · " + fmt(Math.abs(gap), 1) + " m";
+  }
+
+  // ---------- Speedometers ----------
+  var cvGauges = document.getElementById("gauges");
+  function drawGauges() {
+    var g = setup(cvGauges), ctx = g.ctx, w = g.w;
+    var L = 44, R = w - 8, lo = state.lo, hi = state.hi;
+    var sx = function (v) { return L + (R - L) * (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo); };
+    var ax = function (a) { return L + (R - L) * Math.max(0, Math.min(state.accMax, a)) / state.accMax; };
+    // speed scale ticks along the top
+    ctx.fillStyle = C["--muted"]; ctx.font = "10px " + FM; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    var step = (hi - lo) > 6 ? 2 : 1;
+    for (var t = Math.ceil(lo); t <= hi; t += step) { ctx.fillText(t, sx(t), 0); ctx.fillRect(sx(t), 12, 1, 3); }
+    ctx.textAlign = "left"; ctx.fillText("m/s", 0, 0);
+    state.sims.forEach(function (sim, ri) {
+      var y0 = 18 + ri * 54, col = C[state.runners[ri].color];
+      var k = idxAt(sim, state.T), v = sim.V[k], tg = sim.TG[k], a = sim.A[k], dash = sim.DASH[k];
+      var done = finished(sim, state.T);
+      token(ctx, 16, y0 + 16, 11, col, state.runners[ri].letter);
+      // speed bar
+      var bh = 18;
+      ctx.fillStyle = C["--sunk"]; ctx.fillRect(L, y0, R - L, bh);
+      ctx.fillStyle = col; ctx.fillRect(L, y0, sx(v) - L, bh);
+      // room between current and target
+      if (!done && tg - v > 0.02) {
+        var x1 = sx(v), x2 = sx(tg);
+        ctx.save(); ctx.beginPath(); ctx.rect(x1, y0, x2 - x1, bh); ctx.clip();
+        ctx.fillStyle = alpha(C["--acc"], .16); ctx.fillRect(x1, y0, x2 - x1, bh);
+        ctx.strokeStyle = alpha(C["--acc"], .8); ctx.lineWidth = 1.5;
+        for (var hx = x1 - bh; hx < x2 + bh; hx += 6) { ctx.beginPath(); ctx.moveTo(hx, y0 + bh); ctx.lineTo(hx + bh, y0); ctx.stroke(); }
+        ctx.restore();
+      } else if (!done && v - tg > 0.02) {
+        ctx.fillStyle = alpha(C["--warn"], .35); ctx.fillRect(sx(tg), y0, sx(v) - sx(tg), bh);
+      }
+      // target marker
+      var txp = sx(tg);
+      ctx.fillStyle = C["--ink"]; ctx.fillRect(txp - 1.5, y0 - 3, 3, bh + 6);
+      // labels
+      ctx.font = "500 12px " + FM; ctx.textBaseline = "middle";
+      var sLabel = fmt(v, 2) + " m/s";
+      ctx.textAlign = "left";
+      var inside = sx(v) - L > ctx.measureText(sLabel).width + 12;
+      ctx.fillStyle = inside ? "#ffffff" : C["--ink"];
+      ctx.fillText(sLabel, inside ? L + 6 : sx(v) + 6, y0 + bh / 2 + 1);
+      var tLabel = "top " + fmt(tg, 2);
+      ctx.font = "500 11px " + FM; ctx.textBaseline = "top";
+      var tw = ctx.measureText(tLabel).width;
+      ctx.textAlign = txp + tw + 6 > R ? "right" : "left";
+      ctx.fillStyle = C["--ink"];
+      ctx.fillText(tLabel, ctx.textAlign === "right" ? txp - 5 : txp + 5, y0 + bh + 4);
+      // acceleration bar
+      var ay = y0 + bh + 17, ah = 6;
+      ctx.fillStyle = C["--sunk"]; ctx.fillRect(L, ay, R - L, ah);
+      var aShown = done ? 0 : (dash ? state.accMax : Math.max(0, a));
+      ctx.fillStyle = a < -0.05 && !done ? C["--warn"] : C["--acc"];
+      ctx.fillRect(L, ay, (a < -0.05 && !done ? ax(-a) : ax(aShown)) - L, ah);
+      ctx.font = "11px " + FB; ctx.textBaseline = "middle"; ctx.textAlign = "right"; ctx.fillStyle = C["--muted"];
+      var aText;
+      if (done) aText = "finished";
+      else if (dash) aText = "start dash";
+      else if (a > 0.01) aText = "accelerating +" + fmt(a, 2) + " m/s²";
+      else if (a < -0.01) aText = "slowing to target " + fmt(a, 2) + " m/s²";
+      else aText = "holding top speed · accel has nothing to do";
+      ctx.textAlign = "left";
+      ctx.fillText(aText, L, ay + ah + 7);
+    });
+  }
+
+  // ---------- Speed chart ----------
+  var cvChart = document.getElementById("chart");
+  function drawChart() {
+    var g = setup(cvChart), ctx = g.ctx, w = g.w, h = g.h, D = state.D;
+    var L = 40, R = w - 10, T0 = 10, B = h - 26;
+    var lo = state.lo, hi = state.hi;
+    var px = function (m) { return L + (R - L) * m / D; };
+    var py = function (v) { return B - (B - T0) * (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo); };
+    var bnds = [0, D / 6, D * 4 / 6, D * 5 / 6, D];
+    for (var p = 0; p < 4; p++) { ctx.fillStyle = alpha(C["--ph" + p], .1); ctx.fillRect(px(bnds[p]), T0, px(bnds[p + 1]) - px(bnds[p]), B - T0); }
+    ctx.strokeStyle = C["--line"]; ctx.lineWidth = 1; ctx.fillStyle = C["--muted"]; ctx.font = "11px " + FM;
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    var ystep = (hi - lo) > 6 ? 2 : 1;
+    for (var v = Math.ceil(lo); v <= hi; v += ystep) { var y = py(v); ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(R, y); ctx.stroke(); ctx.fillText(v, L - 6, y); }
+    ctx.save(); ctx.translate(10, (T0 + B) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText("m/s", 0, 0); ctx.restore();
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    var xstep = w < 560 ? 600 : 400;
+    for (var m = 0; m <= D; m += xstep) ctx.fillText(m, px(m), B + 6);
+    function line(sim, arr, col, width, dash, upto) {
+      ctx.strokeStyle = col; ctx.lineWidth = width; ctx.setLineDash(dash || []); ctx.beginPath();
+      var n = upto == null ? sim.X.length : Math.min(sim.X.length, upto + 1);
+      for (var i = 0; i < n; i++) { var x = px(sim.X[i]), yy = py(arr[i]); if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy); }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    line(state.base, state.base.V, alpha(C["--muted"], .5), 1, [2, 3]);
+    state.sims.forEach(function (sim, ri) {
+      var col = C[state.runners[ri].color];
+      line(sim, sim.TG, alpha(col, .55), 1.2, [5, 4]);
+      line(sim, sim.V, alpha(col, .22), 2);
+      line(sim, sim.V, col, 2.2, null, idxAt(sim, state.T));
+    });
+    state.sims.forEach(function (sim, ri) {
+      sim.events.forEach(function (ev) {
+        var k = Math.round(ev.t / DT), x = px(ev.x), y = py(sim.V[Math.min(k, sim.V.length - 1)]);
+        ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fillStyle = C[TYPES[ev.type].color]; ctx.fill();
+        ctx.lineWidth = 1.5; ctx.strokeStyle = C[state.runners[ri].color]; ctx.stroke();
+      });
+      var k = idxAt(sim, state.T);
+      ctx.beginPath(); ctx.arc(px(sim.X[k]), py(sim.V[k]), 5, 0, Math.PI * 2); ctx.fillStyle = C[state.runners[ri].color]; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = C["--surface"]; ctx.stroke();
+    });
+    ctx.fillStyle = C["--muted"]; ctx.textAlign = "right"; ctx.textBaseline = "bottom"; ctx.font = "11px " + FB;
+  }
+
+  // ---------- Live readouts ----------
+  var phaseBadge = document.getElementById("phaseBadge"), leadPos = document.getElementById("leadPos"), clock = document.getElementById("clock"), scrub = document.getElementById("scrub");
+  function updateLive() {
+    var lead = 0;
+    state.sims.forEach(function (sim, ri) {
+      var k = idxAt(sim, state.T), ref = refs[ri], x = posAt(sim, state.T);
+      lead = Math.max(lead, x);
+      if (!ref) return;
+      var mask = sim.ACT[k];
+      ref.rows.forEach(function (row, si) { row.row.classList.toggle("active", !!(mask & (1 << si))); });
+    });
+    var ph = phaseOf(Math.min(lead, state.D - 0.01), state.D);
+    phaseBadge.textContent = lead >= state.D ? "Finish" : PHASES[ph];
+    phaseBadge.style.background = "var(--ph" + ph + ")";
+    leadPos.textContent = fmt(lead, 0) + " m";
+    clock.textContent = fmtTime(state.T);
+    scrub.value = state.T;
+  }
+
+  function render() { var m = !document.getElementById("viewMap").hidden; if (m) drawTrack(); drawClose(); drawGauges(); if (!m) drawChart(); updateLive(); }
+
+  // ---------- Playback ----------
+  var playBtn = document.getElementById("play");
+  function syncPlay() { playBtn.textContent = state.playing ? "Pause" : (state.T >= state.maxT - 0.01 ? "Replay" : (state.T > 0 ? "Resume" : "Start")); }
+  playBtn.addEventListener("click", function () {
+    if (!state.playing && state.T >= state.maxT - 0.01) state.T = 0;
+    state.playing = !state.playing; syncPlay();
+  });
+  document.getElementById("reset").addEventListener("click", function () { state.T = 0; state.playing = false; syncPlay(); });
+  document.getElementById("rates").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    state.rate = +b.dataset.r;
+    this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+  });
+  scrub.addEventListener("input", function () { state.T = +scrub.value; state.playing = false; syncPlay(); });
+
+  var dist = document.getElementById("dist"), distVal = document.getElementById("distVal");
+  dist.addEventListener("input", function () {
+    state.D = +dist.value; distVal.textContent = state.D + " m";
+    state.T = 0; state.playing = false; syncPlay();
+    renderRunners(); runSims();
+  });
+  var preset = document.getElementById("preset");
+  preset.addEventListener("change", function () { applyPreset(preset.value); });
+
+  var tabMap = document.getElementById("tabMap"), tabChart = document.getElementById("tabChart");
+  function showView(v) {
+    var isMap = v === "map";
+    tabMap.setAttribute("aria-selected", isMap ? "true" : "false");
+    tabChart.setAttribute("aria-selected", isMap ? "false" : "true");
+    document.getElementById("viewMap").hidden = !isMap;
+    document.getElementById("viewChart").hidden = isMap;
+  }
+  tabMap.addEventListener("click", function () { showView("map"); });
+  tabChart.addEventListener("click", function () { showView("chart"); });
+
+  var last = performance.now();
+  function frame(now) {
+    var dtr = Math.min(0.1, (now - last) / 1000); last = now;
+    if (state.playing) {
+      state.T += dtr * state.rate;
+      if (state.T >= state.maxT) { state.T = state.maxT; state.playing = false; syncPlay(); }
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  applyPreset("duel");
+  // First frame: show the race shortly after the Final Leg starts, so the page reads well at rest
+  (function () {
+    var s = state.sims[0], target = state.D * 0.72;
+    for (var i = 0; i < s.X.length; i++) if (s.X[i] >= target) { state.T = i * DT; break; }
+    syncPlay();
+  })();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
